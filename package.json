@@ -1,0 +1,37 @@
+{
+    "name": "r",
+    "version":"0.0.1",
+
+    "dependencies": {
+        "react" : "*"
+    },
+
+    "devDependencies" : {
+        "webpack" : "*",
+        "webpack-dev-server" : "*",
+        "babel-loader" : "*",
+        "file-loader" : "*",
+        "style-loader" : "*",
+        "css-loader" : "*",
+        "less-loader" : "*",
+        "extract-text-webpack-plugin" : "*",
+
+
+        "jasmine-core" : "2.x",
+        "jasmine" : "*",
+
+        "eslint" : "*",
+        "babel-eslint" : "*",
+        "eslint-plugin-react" : "*"
+    },
+
+    "engines": {
+        "node": "0.12.x"
+    },
+
+    "scripts": {
+
+        "start": "node game/server/run.js"
+
+    }
+}
