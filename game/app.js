@@ -1,3 +1,5 @@
+/* global location, io */
+
 
 /////////////////////
 ////   geom function
@@ -77,7 +79,7 @@ var updateCamera = function(){
 
     normalise( V )
 }
-var zoom = 0.3
+var zoom = 0.8
 // var toEye={x:0,y:0,z:0}
 // var proj = function( p, target ){
 //
@@ -103,9 +105,9 @@ var zoom = 0.3
 //     return o
 // }
 var point = function( x,y,z, k ){
-    var h = ( Z.x*(x-cameraOrigin.x) + Z.y*(y-cameraOrigin.y) + Z.z*(z-cameraOrigin.z) )
+    var h = ( Z.x*(x+cameraOrigin.x) + Z.y*(y+cameraOrigin.y) + Z.z*(z+cameraOrigin.z) )
 
-    h = -h/200
+    h = 1/h
 
     worldCtx[ k ]( (( U.x*x + U.y*y + U.z*z ) * h * zoom +0.5 )* canvasWidth, (( V.x*x + V.y*y + V.z*z ) * h * zoom +0.5 )* canvasHeight  )
 }
@@ -130,6 +132,9 @@ var render = function(){
     // add every new thing
     // TODO
 
+    var sx = (Z.x < 0) -0.5
+    var sy = (Z.y < 0) -0.5
+
     // update every entity and trash the one that are no longueur in the scene
     for( var i = zbuffer.length; i--;){
 
@@ -141,7 +146,8 @@ var render = function(){
 
         // recompute t
         var v = diff( entity, cameraOrigin )
-        entity.t = scal( v, v )   // it s t square actually,  square is monotone so whatever
+        entity.t = v.x*v.x + v.y*v.y   // it s t square actually,  square is monotone so whatever
+        // entity.t = scal( v, v )   // it s t square actually,  square is monotone so whatever
     }
 
     // sort
@@ -170,35 +176,35 @@ var render = function(){
             case Tile :
 
 
-                // var l = ( entity.t - zbuffer[ 0 ].t )/( zbuffer[ zbuffer.length-1 ].t - zbuffer[ 0 ].t )
-                // var hex = (   (0| Math.max(l*255, 20) ) * ( 256*256 + 256 + 1 )    ).toString( 16 )
+                var l = ( entity.t - zbuffer[ 0 ].t )/( zbuffer[ zbuffer.length-1 ].t - zbuffer[ 0 ].t )
+                var hex = (   (0| Math.max(l*255, 20) ) * ( 256*256 + 256 + 1 )    ).toString( 16 )
 
                 worldCtx.fillStyle = entity.color
-                // worldCtx.strokeStyle = '#'+hex
+                worldCtx.strokeStyle = '#'+hex
                 // worldCtx.strokeStyle = entity.color
                 // worldCtx.fillStyle = '#'+hex
                 worldCtx.lineWidth = 3
+                worldCtx.lineCap = 'round'
 
 
 
 
-                var x = entity.x+ ( (( Z.x<0 )<<1 )-1 ) * 0.5
+                var x = entity.x+ ( Z.x<0 ) - 0.5
                 worldCtx.beginPath()
                 point( x, entity.y + 0.5, entity.z , 'moveTo' )
-                point( x, entity.y + 0.5, entity.z +50 , 'lineTo' )
-                point( x, entity.y - 0.5, entity.z +50 , 'lineTo' )
+                point( x, entity.y + 0.5, 6 , 'lineTo' )
+                point( x, entity.y - 0.5, 6 , 'lineTo' )
                 point( x, entity.y - 0.5, entity.z , 'lineTo' )
                 worldCtx.fill()
 
 
-                var y = entity.y+ ( (( Z.y<0 )<<1 )-1 ) * 0.5
+                var y = entity.y+ ( Z.y<0 ) - 0.5
                 worldCtx.beginPath()
                 point( entity.x + 0.5, y, entity.z, 'moveTo' )
-                point( entity.x + 0.5, y, entity.z+ 50, 'lineTo' )
-                point( entity.x - 0.5, y, entity.z+ 50, 'lineTo' )
+                point( entity.x + 0.5, y, 6 , 'lineTo' )
+                point( entity.x - 0.5, y, 6 , 'lineTo' )
                 point( entity.x - 0.5, y, entity.z, 'lineTo' )
                 worldCtx.fill()
-
 
 
                 worldCtx.beginPath()
@@ -206,24 +212,9 @@ var render = function(){
                 point( entity.x - 0.5, entity.y + 0.5, entity.z, 'lineTo' )
                 point( entity.x - 0.5, entity.y - 0.5, entity.z, 'lineTo' )
                 point( entity.x + 0.5, entity.y - 0.5, entity.z, 'lineTo' )
+                point( entity.x + 0.5, entity.y + 0.5, entity.z, 'lineTo' )
                 worldCtx.fill()
-
-
-
-
-                // worldCtx.fillStyle = entity.color
-                // worldCtx.lineStyle = '#'+hex
-                // // worldCtx.fillStyle = '#'+hex
-                // worldCtx.lineWidth = 1.8
-                //
-                // for( var k=ps.length; k--;) {
-                //     worldCtx.beginPath()
-                //     worldCtx.moveTo( ps[k][0].x * canvasWidth, ps[k][0].y * canvasHeight )
-                //     for( var j=1;j<4;j++)
-                //         worldCtx.lineTo( ps[k][j].x * canvasWidth, ps[k][j].y * canvasHeight )
-                //     // worldCtx.fill()
-                //     worldCtx.stroke()
-                // }
+                worldCtx.stroke()
 
         }
     }
@@ -262,7 +253,7 @@ location.search
 ////   com
 /////////////////////
 
-var socket = io( document.location.href )
+var socket = io( location.href )
 
     .on( 'connect' , function( ){
 
@@ -305,17 +296,26 @@ var socket = io( document.location.href )
 /////////////////////
 ////   bootstrap
 /////////////////////
-
-for( var x=10;x--;)
-for( var y=10;y--;)
+var l=20
+for( var x=l;x--;)
+for( var y=l;y--;)
     zbuffer.push({
-        x: x-5,
-        y: y-5,
+        x: x-l/2,
+        y: y-l/2,
         z: Math.random() * 4,
         q: Tile,
         color: '#'+( 0| ( 255*255*100+ (255*255*150 * Math.random() ) ) ).toString( 16 )
     })
 
+
+
+
+x = 0.5
+y = 0.6
+
+cameraOrigin.x = Math.sin( 1-y*3 ) * Math.cos( x * 8 ) * 30
+cameraOrigin.y = Math.sin( 1-y*3 ) * Math.sin( x * 8 ) * 30
+cameraOrigin.z = Math.cos( 1-y*3 ) * 30
 
 updateCamera()
 render()
@@ -332,10 +332,11 @@ if ( params.freeCamera )
         var x = event.pageX / window.innerWidth
         var y = event.pageY / window.innerHeight
 
-        cameraOrigin.x = Math.sin( 1+y ) * Math.cos( x * 8 ) * 50
-        cameraOrigin.y = Math.sin( 1+y ) * Math.sin( x * 8 ) * 50
-        cameraOrigin.z = Math.cos( 1+y ) * 50
+        var phy = Math.max( Math.PI/10, Math.min( Math.PI/2,  y*3  ))
+
+        cameraOrigin.x = Math.sin( phy ) * Math.cos( x * 8 ) * 20
+        cameraOrigin.y = Math.sin( phy ) * Math.sin( x * 8 ) * 20
+        cameraOrigin.z = Math.cos( phy ) * 20
 
         updateCamera()
-        // render()
     })
