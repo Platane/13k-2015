@@ -44,6 +44,7 @@ var prod = function( a, b ) {
 var players = []
 var projectiles = []
 var Tile = 1
+var BigTile = 2
 
 /////////////////////
 //// world renderer
@@ -79,7 +80,7 @@ var updateCamera = function(){
 
     normalise( V )
 }
-var zoom = 0.8
+var zoom = 2
 // var toEye={x:0,y:0,z:0}
 // var proj = function( p, target ){
 //
@@ -132,8 +133,6 @@ var render = function(){
     // add every new thing
     // TODO
 
-    var sx = (Z.x < 0) -0.5
-    var sy = (Z.y < 0) -0.5
 
     // update every entity and trash the one that are no longueur in the scene
     for( var i = zbuffer.length; i--;){
@@ -145,9 +144,14 @@ var render = function(){
             continue
 
         // recompute t
-        var v = diff( entity, cameraOrigin )
-        entity.t = v.x*v.x + v.y*v.y   // it s t square actually,  square is monotone so whatever
-        // entity.t = scal( v, v )   // it s t square actually,  square is monotone so whatever
+
+        var dx = entity.x - cameraOrigin.x * 100
+        var dy = entity.y - cameraOrigin.y * 100
+        entity.t = dx*dx + dy*dy
+
+        // var v = diff( entity, cameraOrigin )
+        // entity.t = v.x*v.x + v.y*v.y
+        // entity.t = scal( v, v )
     }
 
     // sort
@@ -172,12 +176,11 @@ var render = function(){
 
         entity = zbuffer[ i ]
 
+        var l = ( entity.t - zbuffer[ 0 ].t )/( zbuffer[ zbuffer.length-1 ].t - zbuffer[ 0 ].t )
+        var hex = (   (0| Math.max(l*255, 20) ) * ( 256*256 + 256 + 1 )    ).toString( 16 )
+
         switch( entity.q ) {
             case Tile :
-
-
-                var l = ( entity.t - zbuffer[ 0 ].t )/( zbuffer[ zbuffer.length-1 ].t - zbuffer[ 0 ].t )
-                var hex = (   (0| Math.max(l*255, 20) ) * ( 256*256 + 256 + 1 )    ).toString( 16 )
 
                 worldCtx.fillStyle = entity.color
                 worldCtx.strokeStyle = '#'+hex
@@ -212,9 +215,9 @@ var render = function(){
                 point( entity.x - 0.5, entity.y + 0.5, entity.z, 'lineTo' )
                 point( entity.x - 0.5, entity.y - 0.5, entity.z, 'lineTo' )
                 point( entity.x + 0.5, entity.y - 0.5, entity.z, 'lineTo' )
-                point( entity.x + 0.5, entity.y + 0.5, entity.z, 'lineTo' )
                 worldCtx.fill()
-                worldCtx.stroke()
+
+                break
 
         }
     }
@@ -302,20 +305,18 @@ for( var y=l;y--;)
     zbuffer.push({
         x: x-l/2,
         y: y-l/2,
-        z: Math.random() * 4,
+        // z: - (0 | ( 7*x + x*x*x * 2 + x*x + y*3 + y*y*y * 5) % 3 ),
+        z: 0,
         q: Tile,
         color: '#'+( 0| ( 255*255*100+ (255*255*150 * Math.random() ) ) ).toString( 16 )
     })
 
 
+var phy = Math.PI/6
 
-
-x = 0.5
-y = 0.6
-
-cameraOrigin.x = Math.sin( 1-y*3 ) * Math.cos( x * 8 ) * 30
-cameraOrigin.y = Math.sin( 1-y*3 ) * Math.sin( x * 8 ) * 30
-cameraOrigin.z = Math.cos( 1-y*3 ) * 30
+cameraOrigin.x = Math.sin( phy ) * Math.cos( Math.PI/4 ) * 40
+cameraOrigin.y = Math.sin( phy ) * Math.sin( Math.PI/4 ) * 40
+cameraOrigin.z = Math.cos( phy ) * 40
 
 updateCamera()
 render()
@@ -332,11 +333,11 @@ if ( params.freeCamera )
         var x = event.pageX / window.innerWidth
         var y = event.pageY / window.innerHeight
 
-        var phy = Math.max( Math.PI/10, Math.min( Math.PI/2,  y*3  ))
+        var phy = Math.max( Math.PI/6, Math.min( Math.PI/2,  y*3  ))
 
-        cameraOrigin.x = Math.sin( phy ) * Math.cos( x * 8 ) * 20
-        cameraOrigin.y = Math.sin( phy ) * Math.sin( x * 8 ) * 20
-        cameraOrigin.z = Math.cos( phy ) * 20
+        cameraOrigin.x = Math.sin( phy ) * Math.cos( x * 10 ) * 40
+        cameraOrigin.y = Math.sin( phy ) * Math.sin( x * 10 ) * 40
+        cameraOrigin.z = Math.cos( phy ) * 40
 
         updateCamera()
     })
