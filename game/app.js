@@ -51,8 +51,10 @@ var BigTile = 2
 /////////////////////
 
 var worldCanvas = document.createElement('canvas')
-var canvasWidth = worldCanvas.width = window.innerWidth
-var canvasHeight = worldCanvas.height = window.innerHeight
+var canvasL = Math.min( window.innerWidth, window.innerHeight )
+worldCanvas.width = canvasL
+worldCanvas.height = canvasL
+worldCanvas.setAttribute('style','position:absolute')
 document.body.appendChild( worldCanvas )
 var worldCtx = worldCanvas.getContext('2d')
 
@@ -110,7 +112,7 @@ var point = function( x,y,z, k ){
 
     h = 1/h
 
-    worldCtx[ k ]( (( U.x*x + U.y*y + U.z*z ) * h * zoom +0.5 )* canvasWidth, (( V.x*x + V.y*y + V.z*z ) * h * zoom +0.5 )* canvasHeight  )
+    worldCtx[ k ]( (( U.x*x + U.y*y + U.z*z ) * h * zoom +0.5 )* canvasL, (( V.x*x + V.y*y + V.z*z ) * h * zoom +0.5 )* canvasL  )
 }
 
 // entity in z buffer must declare
@@ -167,7 +169,7 @@ var render = function(){
     ////////// draw entities
 
     // clear
-    worldCtx.clearRect(0,0,canvasWidth,canvasHeight)
+    worldCtx.clearRect(0,0,canvasL,canvasL)
 
 
 
@@ -268,8 +270,6 @@ var socket = io( location.href )
         else
             socket.emit('viewer', params)
 
-
-        params.name && setTimeout( function(){  socket.emit('move', '0.10000000')  }, 5000 )
     })
 
     .on( 'tic' , function( data ){
@@ -308,7 +308,8 @@ for( var y=l;y--;)
         // z: - (0 | ( 7*x + x*x*x * 2 + x*x + y*3 + y*y*y * 5) % 3 ),
         z: 0,
         q: Tile,
-        color: '#'+( 0| ( 255*255*100+ (255*255*150 * Math.random() ) ) ).toString( 16 )
+        // color: '#'+( 0| ( 255*255*100+ (255*255*150 * Math.random() ) ) ).toString( 16 )
+        color: '#'+(   (0| Math.max( (Math.random()*0.4 + 0.6 )  *255, 20) ) * ( 256*256 + 254 )    ).toString( 16 )
     })
 
 
@@ -341,3 +342,62 @@ if ( params.freeCamera )
 
         updateCamera()
     })
+
+
+if ( params.name ){
+
+    var ctrlCanvas = document.createElement('canvas')
+    ctrlCanvas.width = canvasL
+    ctrlCanvas.height = canvasL
+    ctrlCanvas.setAttribute('style','position:absolute')
+    document.body.appendChild( ctrlCanvas )
+    var ctrlCtx = ctrlCanvas.getContext('2d')
+
+    var v={x:0,y:0}
+    var maxV = 0.05
+
+    var renderCtrl = function(){
+
+        ctrlCtx.clearRect(0,0,canvasL,canvasL)
+
+        ctrlCtx.lineWidth = 10
+        ctrlCtx.lineCap = 'round'
+
+        ctrlCtx.beginPath()
+        ctrlCtx.moveTo(canvasL/2, canvasL/2)
+        ctrlCtx.lineTo(canvasL/2+ v.x/maxV*canvasL/4, canvasL/2+ v.y/maxV*canvasL/4)
+        ctrlCtx.stroke()
+    }
+
+    renderCtrl()
+
+    var drag = false
+    ctrlCanvas.addEventListener('mousedown', function(){
+        drag = true
+    })
+    document.addEventListener('mouseup', function(){
+        drag = false
+    })
+    ctrlCanvas.addEventListener('mousemove', function( event ){
+
+        if ( !drag )
+            return
+
+        v.x = ( event.pageX / canvasL - 0.5 ) * 4
+        v.y = ( event.pageY / canvasL - 0.5 ) * 4
+
+        var n = Math.sqrt( v.x*v.x + v.y*v.y )
+        if ( n > 1 ){
+
+            v.x /= n
+            v.y /= n
+        }
+
+        v.x *= maxV
+        v.y *= maxV
+
+        socket.emit('move', v)
+
+        renderCtrl()
+    })
+}

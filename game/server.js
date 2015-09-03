@@ -61,10 +61,9 @@ require('sandbox-io').on('connection', function(socket) {
         emitPlayerList( r )
     })
 
-    socket.on('move', function( data ){
+    socket.on('move', function( v ){
 
-        player.v.x = +data.slice( 0, 5 )
-        player.v.y = +data.slice( 5, 10 )
+        player.v = v
 
     })
 })
@@ -153,7 +152,7 @@ var loop = function(  ){
     }
 
 
-    setTimeout( loop, 1000 )
+    setTimeout( loop, 50 )
 }
 
 loop()
